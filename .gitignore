@@ -1,0 +1,63 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Antigravity databases & private chat archives (CRITICAL FOR PRIVACY)
+AI_MEMORY/
+backups/*.db
+backups/*.db-journal
+backups/*.db-wal
+backups/*.db-shm
+backups/*.vscdb
+backups/*.log
+backups/*.sqlite*
+backups/*.jsonl
+*.vscdb
+
+# Secrets & Environment variables
+.env*
+!.env.example
+*.key
+*.pem
+*.token
+
+# IDE and OS files
+tools/
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini

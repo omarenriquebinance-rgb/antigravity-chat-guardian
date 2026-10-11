@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity Chat Persistence & Recovery Hub</title>
+  <meta name="description" content="Centro de control, respaldo continuo y visor de conversaciones para Google Antigravity IDE">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Barra Lateral -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon">⚡</div>
+          <div class="brand-text">
+            <h2>AGY Rescue</h2>
+            <span class="badge live-badge">Persistencia Activa</span>
+          </div>
+        </div>
+        <button id="btn-sync" class="btn-icon" title="Sincronizar y escanear ahora">
+          <span class="icon">🔄</span>
+        </button>
+      </div>
+
+      <!-- Buscador -->
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Buscar en 100+ conversaciones..." autocomplete="off">
+        <button id="search-clear" class="btn-clear hidden">✕</button>
+      </div>
+
+      <!-- Proyectos Filter Chips -->
+      <div class="projects-section">
+        <span class="section-label">PROYECTOS / WORKSPACES</span>
+        <div class="project-chips" id="project-chips">
+          <button class="chip active" data-project="">Todos (<span id="total-count">0</span>)</button>
+        </div>
+      </div>
+
+      <!-- Lista de Conversaciones -->
+      <div class="conversations-list-container">
+        <span class="section-label">HISTORIAL RESPALDADO</span>
+        <div class="conversations-list" id="conversations-list">
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Cargando historial de chats...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer de estado -->
+      <div class="sidebar-footer">
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          <span id="footer-status-text">101 chats protegidos</span>
+        </div>
+        <span class="version-label">v2.5.5 IDE Support</span>
+      </div>
+    </aside>
+
+    <!-- Contenido Principal: Visor de Chat -->
+    <main class="chat-viewport">
+      <!-- Chat Header -->
+      <header class="chat-header hidden" id="chat-header">
+        <div class="chat-info">
+          <div class="project-tag" id="current-project-tag">Proyecto</div>
+          <h1 id="current-chat-title">Selecciona una conversación</h1>
+          <div class="chat-meta">
+            <span id="current-chat-date">Fecha</span> • 
+            <span id="current-chat-steps">0 pasos</span> • 
+            <code id="current-chat-id">UUID</code>
+          </div>
+        </div>
+        <div class="chat-actions">
+          <button id="btn-export-md" class="btn btn-secondary">
+            <span>📥</span> Exportar MD
+          </button>
+          <button id="btn-restore-ide" class="btn btn-primary" title="Re-asociar para que aparezca en la barra lateral de Antigravity">
+            <span>✨</span> Restaurar en Antigravity
+          </button>
+        </div>
+      </header>
+
+      <!-- Mensajes o Estado Vacío -->
+      <div class="messages-container" id="messages-container">
+        <div class="empty-state" id="empty-state">
+          <div class="empty-illustration">🪐</div>
+          <h2>Tus conversaciones están 100% seguras</h2>
+          <p>Selecciona cualquier chat de la izquierda para ver el historial completo, código generado, comandos y respuestas del agente.</p>
+          <div class="quick-stats-card">
+            <div class="stat-item">
+              <span class="stat-num" id="stat-total-convs">101</span>
+              <span class="stat-desc">Conversaciones Rescatadas</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-num" id="stat-total-msgs">16,763</span>
+              <span class="stat-desc">Mensajes y Pasos</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-num" id="stat-total-projs">14</span>
+              <span class="stat-desc">Proyectos Mapeados</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal de Restauración -->
+  <div class="modal-overlay hidden" id="restore-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Restaurar en Google Antigravity IDE</h3>
+        <button id="modal-close" class="btn-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Esta acción inyectará la conversación seleccionada dentro del índice interno de Antigravity (<code>state.vscdb</code>) vinculada al workspace que elijas.</p>
+        <div class="alert-box">
+          <span class="alert-icon">⚠️</span>
+          <div>
+            <strong>Requisito indispensable:</strong> Antigravity debe cerrarse antes de aplicar la restauración para evitar que la aplicación sobrescriba los datos en memoria al cerrarse.
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="restore-workspace-select">Workspace de destino:</label>
+          <input type="text" id="restore-workspace-input" placeholder="file:///path/to/your-project">
+        </div>
+        <div id="restore-result-msg" class="restore-msg hidden"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-btn-cancel" class="btn btn-secondary">Cancelar</button>
+        <button id="modal-btn-confirm" class="btn btn-primary">Aplicar Restauración</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
