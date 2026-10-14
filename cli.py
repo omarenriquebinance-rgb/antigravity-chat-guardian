@@ -58,10 +58,14 @@ def cmd_restore(conv_id: str, workspace_uri: str = None):
     else:
         print(f"[-] {msg}")
 
-def cmd_restore_all(force: bool = False):
+def cmd_restore_all(force: bool = False, target: str = None, by_project: bool = False):
     from src.recovery.restore_all import restore_all_to_antigravity
     print("[*] Iniciando restauracion completa de todas las conversaciones...")
-    success, msg = restore_all_to_antigravity(force=force)
+    success, msg = restore_all_to_antigravity(
+        force=force,
+        target_workspace=target or os.getcwd(),
+        bind_all_to_target=not by_project
+    )
     if success:
         print(f"[+] {msg}")
     else:
@@ -101,6 +105,8 @@ def main():
 
     restore_all_p = subparsers.add_parser("restore-all", help="Restaura todas las conversaciones (100+) a sus proyectos correspondientes")
     restore_all_p.add_argument("--force", action="store_true", help="Forzar escritura incluso si Antigravity esta abierto")
+    restore_all_p.add_argument("--target", default=None, help="Carpeta o workspace destino (por defecto carpeta actual)")
+    restore_all_p.add_argument("--by-project", action="store_true", help="Vincular cada conversacion exclusivamente a su carpeta de proyecto original")
 
     export_p = subparsers.add_parser("export", help="Exporta una conversacion a Markdown o JSON")
     export_p.add_argument("conv_id", help="UUID de la conversacion a exportar")
@@ -122,7 +128,7 @@ def main():
     elif args.command == "restore":
         cmd_restore(args.conv_id, args.workspace)
     elif args.command == "restore-all":
-        cmd_restore_all(args.force)
+        cmd_restore_all(args.force, args.target, args.by_project)
     elif args.command == "export":
         cmd_export(args.conv_id, args.format, args.out)
     else:
@@ -130,3 +136,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

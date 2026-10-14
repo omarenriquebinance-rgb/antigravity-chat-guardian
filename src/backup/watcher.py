@@ -24,6 +24,12 @@ from typing import Dict, Optional
 # Añadir raíz al path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+# Si se ejecuta bajo pythonw.exe, redirigir stdout y stderr para evitar crashes
+if sys.stdout is None or not hasattr(sys.stdout, "write"):
+    sys.stdout = open(os.devnull, "w", encoding="utf-8")
+if sys.stderr is None or not hasattr(sys.stderr, "write"):
+    sys.stderr = open(os.devnull, "w", encoding="utf-8")
+
 from src.core.paths import get_antigravity_dirs
 from src.backup.extractor import sync_single_conversation, sync_all_conversations
 from src.recovery.restorer import backup_state_vscdb
@@ -34,7 +40,11 @@ LOG_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.
 def log_event(message: str):
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     line = f"[{ts}] {message}"
-    print(line)
+    try:
+        if sys.stdout and hasattr(sys.stdout, "write"):
+            print(line)
+    except Exception:
+        pass
     try:
         os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
         with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -42,6 +52,7 @@ def log_event(message: str):
             f.flush()
     except Exception:
         pass
+
 
 def is_antigravity_running_fast() -> bool:
     """Verificación ultrarrápida nativa de Windows con EnumProcesses (<3ms, 0% CPU)."""
@@ -79,65 +90,25 @@ def is_antigravity_running_fast() -> bool:
                 return "antigravity" in res.stdout.lower()
         except Exception:
             return False
+    return False
+
+from src.recovery.restore_all import restore_all_to_antigravity
 
 def auto_repair_state_indices():
     """
-    Auto-inmunización: Si Antigravity al cerrarse vació chat.ChatSessionStore.index,
-    re-inyecta las conversaciones del respaldo en state.vscdb para que al reabrir el IDE
-    sigan visibles en la barra lateral.
+    Auto-inmunización completa y automática:
+    Al detectarse el cierre de Antigravity IDE, re-inyecta todas las conversaciones
+    con los nombres de sus carpetas de proyecto tanto en state.vscdb (Protobuf y JSON)
+    como en las 25 bases de datos locales de workspaceStorage.
+    Garantiza que la próxima vez que Antigravity se abra, todos los chats estén visibles.
     """
-    paths = get_antigravity_dirs()
-    state_vscdb = paths["state_vscdb"]
-    if not os.path.exists(state_vscdb):
-        return
-
     try:
-        conn = sqlite3.connect(state_vscdb)
-        cursor = conn.cursor()
-        cursor.execute("SELECT value FROM ItemTable WHERE key = 'chat.ChatSessionStore.index'")
-        row = cursor.fetchone()
-        
-        index_data = {}
-        if row and row[0]:
-            try:
-                index_data = json.loads(row[0])
-            except Exception:
-                index_data = {}
-                
-        entries = index_data.get("entries", {})
-        
-        # Si el índice quedó vacío o con muy pocos chats frente al respaldo:
-        conn_bk = get_connection(readonly=True)
-        c_bk = conn_bk.cursor()
-        c_bk.execute("SELECT conversation_id, title, updated_at FROM conversations ORDER BY updated_at DESC LIMIT 30")
-        recent_chats = c_bk.fetchall()
-        conn_bk.close()
-
-        if len(entries) < len(recent_chats):
-            log_event(f"[*] Reparando índice state.vscdb (tenía {len(entries)} sesiones, inyectando recientes)...")
-            backup_state_vscdb(state_vscdb)
-            
-            if "entries" not in index_data:
-                index_data = {"version": 1, "entries": {}}
-
-            ms_now = int(time.time() * 1000)
-            for cid, title, up_time in recent_chats:
-                if cid not in index_data["entries"]:
-                    index_data["entries"][cid] = {
-                        "sessionId": cid,
-                        "creationDate": ms_now,
-                        "customTitle": title or "Chat Recuperado",
-                        "isImported": False
-                    }
-
-            with conn:
-                conn.execute("""
-                INSERT INTO ItemTable (key, value) VALUES ('chat.ChatSessionStore.index', ?)
-                ON CONFLICT(key) DO UPDATE SET value = excluded.value
-                """, (json.dumps(index_data, ensure_ascii=False),))
-                
-            log_event(f"[✓] Índice auto-reparado con éxito. {len(index_data['entries'])} conversaciones preservadas.")
-        conn.close()
+        log_event("[*] Ejecutando auto-inmunización y restauración automática completa...")
+        success, msg = restore_all_to_antigravity(force=True, bind_all_to_target=True)
+        if success:
+            log_event(f"[✓] Auto-inmunización exitosa: {msg}")
+        else:
+            log_event(f"[-] Advertencia en auto-inmunización: {msg}")
     except Exception as e:
         log_event(f"[!] Error durante auto-reparación de índices: {e}")
 
@@ -225,25 +196,25 @@ class SmartAntigravityWatcher:
 
                 if is_open:
                     if not self.was_running:
-                        log_event("[🟢] ANTIGRAVITY IDE DETECTADO ABIERTO. Activando modo de captura continua en tiempo real.")
+                        log_event("[OPEN] ANTIGRAVITY IDE DETECTADO ABIERTO. Modo de captura continua activo.")
                         self.was_running = True
 
                     # Monitoreo activo
                     changes = self.scan_active_conversations()
                     if changes > 0:
-                        log_event(f"[💾] Respaldo en vivo: {changes} conversación(es) actualizada(s) en tiempo real.")
+                        log_event(f"[SAVE] Respaldo en vivo: {changes} conversacion(es) actualizada(s).")
 
                     time.sleep(self.active_interval)
                 else:
                     if self.was_running:
-                        log_event("[🔴] ANTIGRAVITY IDE SE HA CERRADO.")
-                        log_event("[*] Ejecutando sincronización atómica final de cierre...")
-                        time.sleep(1.5)  # Esperar liberación de bloqueos de archivo
+                        log_event("[CLOSED] ANTIGRAVITY IDE SE HA CERRADO.")
+                        log_event("[*] Ejecutando sincronizacion atomica final y auto-inmunizacion...")
+                        time.sleep(1.5)  # Esperar liberacion de bloqueos de archivo
                         self.scan_active_conversations()
-                        # Auto-inmunizar índice de la base de datos
+                        # Auto-inmunizar indice de la base de datos
                         auto_repair_state_indices()
                         self.was_running = False
-                        log_event("[💤] Entrando en modo de reposo inteligente (esperando próxima apertura)...")
+                        log_event("[SLEEP] Entrando en modo de reposo (esperando proxima apertura)...")
 
                     time.sleep(self.idle_interval)
 
@@ -252,7 +223,8 @@ class SmartAntigravityWatcher:
                 self.running = False
                 break
             except Exception as e:
-                log_event(f"[!] Excepción en ciclo del servicio: {e}")
+                log_event(f"[!] Excepcion en ciclo del servicio: {e}")
+
                 time.sleep(self.idle_interval)
 
     def start(self):

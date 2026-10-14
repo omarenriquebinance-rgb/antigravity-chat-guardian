@@ -35,6 +35,7 @@ venv.bak/
 
 # Antigravity databases & private chat archives (CRITICAL FOR PRIVACY)
 AI_MEMORY/
+exports/
 backups/*.db
 backups/*.db-journal
 backups/*.db-wal

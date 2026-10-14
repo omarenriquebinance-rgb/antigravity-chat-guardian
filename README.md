@@ -6,8 +6,9 @@
 ### The Ultimate History Recovery, Live Auto-Backup & Local Viewer for Google Antigravity IDE
 
 [![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg?style=for-the-badge&logo=python)](https://www.python.org/)
-[![Version](https://img.shields.io/badge/version-1.0.0-informational.svg?style=for-the-badge)]()
+[![Version](https://img.shields.io/badge/version-1.1.0-informational.svg?style=for-the-badge)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-0078D6.svg?style=for-the-badge)](https://github.com)
 [![Antigravity](https://img.shields.io/badge/Antigravity%20IDE-v2.0%20--%20v2.5.5%2B-purple.svg?style=for-the-badge)](https://antigravity.google)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](CONTRIBUTING.md)
@@ -80,9 +81,10 @@ Developers using **Google Antigravity IDE** (based on VS Code OSS) frequently fa
    *It will verify your Python environment, scan your Antigravity IDE installation, and run an initial integrity check.*
 
 3. **Start Protecting & Restoring:**
-   * **To restore all past chats into the IDE sidebar:** Double-click `restaurar_historial_antigravity.bat`.
-   * **To activate silent background auto-backup:** Double-click `iniciar_vigilante_silencioso.vbs`.
+   * **To restart IDE and restore all chats with folder names in 1 click:** Double-click `REINICIAR_Y_RESTAURAR_ANTIGRAVITY.bat` (or `restaurar_historial_antigravity.bat`).
+   * **To activate permanent silent background auto-backup:** Double-click `iniciar_vigilante_silencioso.vbs` (also automatically installed in Windows Startup).
    * **To browse all chats in the offline Web Viewer:** Double-click `run_hub.bat`.
+
 
 ---
 
